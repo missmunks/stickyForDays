@@ -299,7 +299,7 @@ export default function Home(){
         {/* Allergies */}
         <section className="section-card backdrop-blur p-6 rounded-2xl shadow-xl border-4 border-red-300">
           <h2 className="text-2xl font-bold mb-3">I have an allergy! <span aria-hidden>🛟</span></h2>
-          <p className="text-sm text-gray-700 mb-3">Share helpful info so the snack bar stays friendly. (Examples: “Peanuts”, “Dairy”, “Gluten”, “Gelatin”, “Food dye #40”.)</p>
+          <p className="text-sm text-gray-700 mb-3">Share helpful info so the snack bar stays friendly. (Examples: “Peanuts”, “Dairy”, "Bullshit", “Gluten”, “Gelatin”, “Food dye #40”, "Fun".)</p>
           <form onSubmit={addAllergy} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <input value={allergyName} onChange={e=>setAllergyName(e.target.value)} placeholder="Your name (optional)" className="border p-2 rounded" />
             <input value={allergyNote} onChange={e=>setAllergyNote(e.target.value)} placeholder="Allergy / note (required)" className="border p-2 rounded md:col-span-1" />
