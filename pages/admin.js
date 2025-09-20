@@ -2,20 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 
 export default function Admin(){
-  // RSVPs state
+  // ---- RSVPs ----
   const [token, setToken] = useState('')
   const [rows, setRows] = useState([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // Allergies state
-  const [adminToken, setAdminToken] = useState('')
-  const [allergies, setAllergies] = useState([])
-  const [aLoading, setALoading] = useState(false)
-  const [aError, setAError] = useState('')
-
-  // Load RSVPs
-  async function load(){
+  async function loadRSVPs(){
     try{
       setError('')
       const res = await fetch('/.netlify/functions/rsvp?admin=1', {
@@ -28,10 +21,9 @@ export default function Admin(){
       setError('Could not load (check admin token or functions)')
     }
   }
+  useEffect(()=>{ if(token) loadRSVPs() }, [token])
 
-  useEffect(()=>{ if(token) load() }, [token])
-
-  async function del(id){
+  async function delRSVP(id){
     if(!confirm('Delete this RSVP?')) return
     setBusy(true)
     try{
@@ -44,7 +36,7 @@ export default function Admin(){
         body: JSON.stringify({ id })
       })
       if(!res.ok) throw new Error('delete failed')
-      await load()
+      await loadRSVPs()
     }catch(e){
       setError('Delete failed (check token)')
     }finally{
@@ -54,7 +46,7 @@ export default function Admin(){
 
   const total = useMemo(()=>rows.reduce((a,r)=>a + (r.count||1),0),[rows])
 
-  async function downloadCSV(){
+  async function downloadRSVPsCSV(){
     const res = await fetch('/.netlify/functions/rsvp?format=csv&admin=1', {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
@@ -68,7 +60,44 @@ export default function Admin(){
     URL.revokeObjectURL(url)
   }
 
-  // Load Allergies
+  // ---- Waiver Logs ----
+  const [wRows, setWRows] = useState([])
+  const [wError, setWError] = useState('')
+
+  async function loadWaivers(){
+    try{
+      setWError('')
+      const res = await fetch('/.netlify/functions/waivers', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+      if(!res.ok) throw new Error('auth')
+      const data = await res.json()
+      setWRows(data.rows || [])
+    }catch(e){
+      setWError('Could not load waivers (check admin token or functions)')
+    }
+  }
+
+  async function downloadWaiversCSV(){
+    const res = await fetch('/.netlify/functions/waivers?format=csv', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if(!res.ok){ alert('Waiver CSV download failed (check token)'); return }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'waivers.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // ---- Allergies ----
+  const [adminToken, setAdminToken] = useState('')  // separate header for allergies delete
+  const [allergies, setAllergies] = useState([])
+  const [aLoading, setALoading] = useState(false)
+  const [aError, setAError] = useState('')
+
   async function loadAllergies() {
     try {
       setALoading(true); setAError('');
@@ -99,27 +128,29 @@ export default function Admin(){
     }
   }
 
-  // Render
+  // ---- Render ----
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-6">
-      <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow p-6 space-y-10">
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow p-6 space-y-10">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold">Admin — Caramel Apple / Pumpkin Art / Chaos</h1>
           <Link href="/" className="underline text-blue-600">← Back to site</Link>
         </div>
 
-        {/* RSVPs Section */}
-        <section>
-          <label className="block mb-4">
-            <span className="text-sm font-medium">RSVP Admin Token (Netlify env: ADMIN_TOKEN)</span>
-            <input type="password" className="border p-2 rounded w-full"
-              value={token} onChange={e=>setToken(e.target.value)}
-              placeholder="Paste token to unlock" />
-          </label>
+        {/* Shared admin token for RSVPs + Waivers */}
+        <label className="block mb-4">
+          <span className="text-sm font-medium">Admin Token (Netlify env: ADMIN_TOKEN)</span>
+          <input type="password" className="border p-2 rounded w-full" value={token} onChange={e=>setToken(e.target.value)} placeholder="Paste token to unlock" />
+        </label>
 
-          <div className="flex gap-2 mb-4">
-            <button onClick={load} className="bg-blue-600 text-white px-4 py-2 rounded">Refresh</button>
-            <button className="bg-emerald-600 text-white px-4 py-2 rounded" onClick={downloadCSV}>Download CSV</button>
+        {/* RSVPs */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-2xl font-bold">RSVPs</h2>
+            <div className="flex gap-2">
+              <button onClick={loadRSVPs} className="bg-blue-600 text-white px-4 py-2 rounded">Refresh</button>
+              <button onClick={downloadRSVPsCSV} className="bg-emerald-600 text-white px-4 py-2 rounded">Download CSV</button>
+            </div>
           </div>
 
           {error && <p className="text-red-600 mb-3">{error}</p>}
@@ -140,7 +171,7 @@ export default function Admin(){
                   <td className="p-2 border text-center">{r.count}</td>
                   <td className="p-2 border">{new Date(r.created_at).toLocaleString()}</td>
                   <td className="p-2 border text-center">
-                    <button disabled={busy} onClick={()=>del(r.id)} className="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
+                    <button disabled={busy} onClick={()=>delRSVP(r.id)} className="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
                   </td>
                 </tr>
               ))}
@@ -150,13 +181,56 @@ export default function Admin(){
           <p className="mt-4 font-semibold">Total people expected: {total}</p>
         </section>
 
-        {/* Allergies Section */}
+        {/* Waiver Logs */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-2xl font-bold">Waiver Logs</h2>
+            <div className="flex gap-2">
+              <button onClick={loadWaivers} className="bg-blue-600 text-white px-4 py-2 rounded">Refresh</button>
+              <button onClick={downloadWaiversCSV} className="bg-emerald-600 text-white px-4 py-2 rounded">Download CSV</button>
+            </div>
+          </div>
+
+          {wError && <p className="text-red-600 mb-3">{wError}</p>}
+
+          <table className="w-full text-sm border">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="p-2 border">When</th>
+                <th className="p-2 border">Name</th>
+                <th className="p-2 border">Email</th>
+                <th className="p-2 border">Method</th>
+                <th className="p-2 border">Version</th>
+                <th className="p-2 border">IP</th>
+                <th className="p-2 border">User Agent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {wRows.map(w=>(
+                <tr key={w.id}>
+                  <td className="p-2 border">{new Date(w.agreed_at).toLocaleString()}</td>
+                  <td className="p-2 border">{w.name}</td>
+                  <td className="p-2 border">{w.email || w.contact || ''}</td>
+                  <td className="p-2 border">{w.method || 'checkbox'}</td>
+                  <td className="p-2 border">{w.waiver_version || 'v8'}</td>
+                  <td className="p-2 border">{w.ip_address || ''}</td>
+                  <td className="p-2 border" style={{maxWidth: 280, overflowWrap: 'anywhere'}}>{w.user_agent || ''}</td>
+                </tr>
+              ))}
+              {wRows.length===0 && (
+                <tr><td colSpan="7" className="p-2 border text-center text-gray-600 italic">No waiver logs yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </section>
+
+        {/* Allergies */}
         <section className="section-card p-4 border rounded">
           <h2 className="text-xl font-bold mb-2">Allergies (Admin)</h2>
           <div className="flex gap-2 mb-3">
             <input
               type="password"
-              placeholder="Admin token"
+              placeholder="Admin token (for deletes)"
               value={adminToken}
               onChange={e=>setAdminToken(e.target.value)}
               className="border p-2 rounded"
@@ -166,19 +240,19 @@ export default function Admin(){
           {aError && <p className="text-red-600">{aError}</p>}
           {aLoading ? <p>Loading…</p> : (
             <table className="w-full text-sm">
-              <thead><tr><th className="text-left">When</th><th className="text-left">Name</th><th className="text-left">Note</th><th></th></tr></thead>
+              <thead><tr><th className="text-left p-2 border">When</th><th className="text-left p-2 border">Name</th><th className="text-left p-2 border">Note</th><th className="p-2 border w-24"></th></tr></thead>
               <tbody>
                 {allergies.map(a=>(
                   <tr key={a.id}>
-                    <td>{new Date(a.created_at).toLocaleString()}</td>
-                    <td>{a.name || 'Guest'}</td>
-                    <td>{a.note}</td>
-                    <td className="text-right">
+                    <td className="p-2 border">{new Date(a.created_at).toLocaleString()}</td>
+                    <td className="p-2 border">{a.name || 'Guest'}</td>
+                    <td className="p-2 border">{a.note}</td>
+                    <td className="p-2 border text-right">
                       <button onClick={()=>deleteAllergy(a.id)} className="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
                     </td>
                   </tr>
                 ))}
-                {allergies.length===0 && <tr><td colSpan="4" className="italic text-gray-600">No allergies yet.</td></tr>}
+                {allergies.length===0 && <tr><td colSpan="4" className="italic text-gray-600 p-2 border">No allergies yet.</td></tr>}
               </tbody>
             </table>
           )}

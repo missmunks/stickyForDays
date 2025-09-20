@@ -126,6 +126,7 @@ const itemsSeed = [
 const AGREED_KEY = 'waiver_accepted_v3'
 
 export default function Home(){
+  const [email, setEmail] = useState('');
   const [name, setName] = useState('')
   const [count, setCount] = useState(1)
   const [guests, setGuests] = useState([])
