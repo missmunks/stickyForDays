@@ -1,53 +1,116 @@
-const { createClient } = require('@supabase/supabase-js')
-const corsHeaders = {'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET, POST, DELETE, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization'}
-function isAdmin(event){const token=(event.headers['authorization']||event.headers['Authorization']||'').split(' ')[1]||'';const expected=process.env.ADMIN_TOKEN||'';return expected&&token&&token===expected}
-exports.handler=async(event)=>{
-  if(event.httpMethod==='OPTIONS'){return{statusCode:200,headers:corsHeaders,body:'ok'}}
-  const url=process.env.SUPABASE_URL, key=process.env.SUPABASE_SERVICE_ROLE
-  if(!url||!key){ return { statusCode:500, headers:corsHeaders, body: JSON.stringify({ error:'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE' }) } }
-  const s=createClient(url,key)
-  const admin=event.queryStringParameters&&event.queryStringParameters.admin==='1';
+// netlify/functions/rsvp.js
+const { createClient } = require('@supabase/supabase-js');
 
-  if(event.httpMethod==='GET'){
-    const cols=admin?'id,name,count,created_at':'name,count';
-    if(admin&&!isAdmin(event))return{statusCode:401,headers:corsHeaders,body:JSON.stringify({error:'Unauthorized'})};
-    const {data,error}=await s.from('rsvps').select(cols).order('created_at',{ascending:true});
-    if(error)return{statusCode:500,headers:corsHeaders,body:JSON.stringify({error:error.message})};
-    if((event.queryStringParameters||{}).format==='csv'){
-      const header=admin?['id','name','count','created_at']:['name','count'];
-      const rows=[header.join(',')];
-      for(const row of data)rows.push(header.map(k=>row[k]??'').join(','));
-      return{statusCode:200,headers:{...corsHeaders,'Content-Type':'text/csv','Content-Disposition':'attachment; filename="rsvps.csv"'},body:rows.join('\n')}
-    }
-    return{statusCode:200,headers:corsHeaders,body:JSON.stringify({rows:data})}
-  }
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+};
 
-  if(event.httpMethod==='POST'){
-    try{
-      const {name,count,agreed}=JSON.parse(event.body||'{}');
-      if(!agreed) return {statusCode:400,headers:corsHeaders,body:JSON.stringify({error:'waiver not accepted'})}
-      if(!name)return{statusCode:400,headers:corsHeaders,body:JSON.stringify({error:'Name required'})};
-      const safe=Number(count)||1;
-      const {error}=await s.from('rsvps').insert([{name,count:safe}]);
-      if(error)throw error;
-      return{statusCode:200,headers:corsHeaders,body:JSON.stringify({ok:true})}
-    }catch(e){
-      return{statusCode:500,headers:corsHeaders,body:JSON.stringify({error:e.message})}
-    }
-  }
-
-  if(event.httpMethod==='DELETE'){
-    if(!isAdmin(event))return{statusCode:401,headers:corsHeaders,body:JSON.stringify({error:'Unauthorized'})};
-    try{
-      const {id}=JSON.parse(event.body||'{}');
-      if(!id)return{statusCode:400,headers:corsHeaders,body:JSON.stringify({error:'id required'})};
-      const {error}=await s.from('rsvps').delete().eq('id',id);
-      if(error)throw error;
-      return{statusCode:200,headers:corsHeaders,body:JSON.stringify({ok:true})}
-    }catch(e){
-      return{statusCode:500,headers:corsHeaders,body:JSON.stringify({error:e.message})}
-    }
-  }
-
-  return{statusCode:405,headers:corsHeaders,body:'Method Not Allowed'}
+function isAdmin(event) {
+  const token =
+    event.headers['authorization'] ||
+    event.queryStringParameters?.admin ||
+    '';
+  // simple shared-secret check; adjust if you use something else
+  return token && token === process.env.ADMIN_TOKEN;
 }
+
+exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: corsHeaders, body: 'ok' };
+  }
+
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE;
+  if (!url || !key) {
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE' })
+    };
+  }
+  const s = createClient(url, key);
+
+  const adminView = !!event.queryStringParameters?.admin;
+
+  // ---------- GET: list RSVPs (optionally CSV for admin) ----------
+  if (event.httpMethod === 'GET') {
+    try {
+      const cols = adminView ? 'id,name,count,created_at' : 'name,count';
+      if (adminView && !isAdmin(event)) {
+        return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'Unauthorized' }) };
+      }
+
+      const { data, error } = await s.from('rsvps').select(cols).order('created_at', { ascending: false });
+      if (error) throw error;
+
+      // CSV export if ?format=csv
+      if ((event.queryStringParameters?.format || '').toLowerCase() === 'csv') {
+        const header = adminView ? ['id', 'name', 'count', 'created_at'] : ['name', 'count'];
+        const rows = [header.join(',')];
+        for (const row of data) {
+          rows.push(header.map(k => (row[k] ?? '')).join(','));
+        }
+        return {
+          statusCode: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'text/csv' },
+          body: rows.join('\n')
+        };
+      }
+
+      return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ rows: data }) };
+    } catch (e) {
+      return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: e.message }) };
+    }
+  }
+
+  // ---------- POST: add RSVP & log waiver proof ----------
+  if (event.httpMethod === 'POST') {
+    try {
+      const body = JSON.parse(event.body || '{}');
+
+      // expected fields coming from your form
+      const name   = (body.name || '').toString().trim();
+      const count  = Number(body.count || 1);
+      const agreed = !!body.agreed;                 // checkbox on the page
+      const email  = (body.email || '').toString().trim();
+      const phone  = (body.phone || '').toString().trim();
+      const method = (body.method || 'checkbox').toString();  // how they agreed (optional)
+
+      if (!agreed) {
+        return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'Please accept the Release of Liability.' }) };
+      }
+      if (!name) {
+        return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'Missing name' }) };
+      }
+
+      // 1) Insert RSVP
+      const { error: rsvpErr } = await s.from('rsvps').insert([{ name, count }]);
+      if (rsvpErr) throw rsvpErr;
+
+      // 2) Log waiver proof (simple table, no attendee_id)
+      const ip = event.headers['x-nf-client-connection-ip'] ||
+                 event.headers['x-forwarded-for'] ||
+                 event.headers['client-ip'] || '';
+      const ua = event.headers['user-agent'] || '';
+      const contact = email || phone || null;
+
+      const { error: wErr } = await s.from('waivers').insert([{
+        name,
+        contact,
+        method,                 // 'checkbox' | 'email' | 'sms'
+        waiver_version: 'v8',
+        ip_address: ip,
+        user_agent: ua
+      }]);
+      if (wErr) throw wErr;
+
+      return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ ok: true }) };
+    } catch (e) {
+      return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: e.message }) };
+    }
+  }
+
+  return { statusCode: 405, headers: corsHeaders, body: 'Method Not Allowed' };
+};

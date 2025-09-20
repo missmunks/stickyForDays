@@ -214,6 +214,27 @@ export default function Home(){
     }catch(e){ setSaveState('error'); setItems(prev=>prev.filter(x=>x!==item)); const cp={...claimed}; delete cp[item]; setClaimed(cp) }
   }
 
+  // state
+const [email, setEmail] = useState('');
+
+// in the form (RSVP section)
+<input value={email} onChange={e=>setEmail(e.target.value)}
+       placeholder="Email (optional)" className="border p-2 rounded" disabled={!agreed} />
+
+// in submit()
+const res = await fetch('/.netlify/functions/rsvp', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name,
+    email,                     // <-- add this
+    count: Number(count)||1,
+    agreed: true,
+    method: 'checkbox'
+  })
+});
+
+
   async function addAllergy(e){
     e.preventDefault()
     const nm = allergyName.trim()

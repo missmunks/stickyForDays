@@ -3,7 +3,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const cors = () => ({
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 });
 
@@ -39,3 +39,22 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: e.message }) };
   }
 };
+// read email from body
+const body = JSON.parse(event.body || '{}');
+const name  = (body.name  || 'Guest').toString().slice(0,120);
+const email = (body.email || '').toString().slice(0,200);
+
+const ip = event.headers['x-forwarded-for'] || '';
+const ua = event.headers['user-agent'] || '';
+
+const supabase = createClient(url, key);
+const { error } = await supabase.from('waivers').insert([{
+  name,
+  email,                 // <-- store email
+  contact: email || null,
+  method: 'checkbox',
+  waiver_version: 'v8',
+  ip_address: ip,
+  user_agent: ua
+}]);
+
