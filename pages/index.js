@@ -1,133 +1,29 @@
-
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 const itemsSeed = [
-  "Apple slices",
-  "Pear wedges",
-  "Marshmallows",
-  "Rice Krispie treats",
-  "Pretzel rods",
-  "Pretzel twists",
-  "Pretzel sticks",
-  "Angel food cake cubes",
-  "Pound cake bites",
-  "Graham crackers",
-  "Teddy Grahams",
-  "Mini donuts",
-  "Donut holes",
-  "Waffle cone chunks",
-  "Brownie bites",
-  "Potato chips",
-  "Cheese cubes",
-  "Twinkies",
-  "Little Debbie snack cakes",
-  "Dried mango",
-  "Dried apricots",
-  "Dried figs",
-  "Banana chips",
-  "Dried cranberries",
-  "Frozen banana slices",
-  "Mini pancakes",
-  "Mini waffles",
-  "Churro bites",
-  "Popcorn balls",
-  "Caramel corn clusters",
-  "Fortune cookies",
-  "Rice cakes",
-  "Saltines",
-  "Ritz crackers",
-  "Pita chips",
-  "Graham pita chips",
-  "Bugles",
-  "Cinnamon rolls",
-  "Cornbread cubes",
-  "Chopped peanuts",
-  "Almonds",
-  "Pecans",
-  "Cashews",
-  "Walnuts",
-  "Crushed Oreos",
-  "Crumbled graham crackers",
-  "Crushed pretzels",
-  "Granola",
-  "Toffee bits",
-  "Corn flakes",
-  "Fruity Pebbles",
-  "Fruit Loops",
-  "Cap\u2019n Crunch",
-  "Lucky Charms marshmallows",
-  "Rainbow sprinkles",
-  "Star sprinkles",
-  "Heart sprinkles",
-  "Nerds",
-  "Pop Rocks",
-  "Skittles minis",
-  "M&Ms",
-  "Cotton candy bits",
-  "Edible glitter",
-  "Luster dust",
-  "Sour gummy worms",
-  "Gummy bears",
-  "Mini marshmallows",
-  "Shredded coconut",
-  "White chocolate chips",
-  "Dark chocolate chips",
-  "Butterscotch chips",
-  "Cinnamon sugar",
-  "Crushed candy canes",
-  "Caramel drizzle",
-  "Cookie crumbs",
-  "Nilla wafers",
-  "Biscoff",
-  "Chocolate chip cookies",
-  "Churro dust",
-  "Reeses Pieces",
-  "Peanut butter cups",
-  "Dried cranberry bits",
-  "Crushed banana chips",
-  "Marshmallow fluff drizzle",
-  "Strawberries",
-  "Pineapple chunks",
-  "Grapes",
-  "Orange wedges",
-  "Clementine segments",
-  "Kiwi slices",
-  "Raspberries",
-  "Blackberries",
-  "Dried dates",
-  "Coconut chunks",
-  "Chips Ahoy",
-  "Mini chocolate chip cookies",
-  "Shortbread cookies",
-  "Biscotti",
-  "Cheesecake cubes",
-  "Mini churros",
-  "Mini Pop-Tarts",
-  "Stroopwafels",
-  "Pringles",
-  "Cocoa Pebbles",
-  "Apple Jacks",
-  "Swedish Fish",
-  "Sour Patch Kids",
-  "Twizzlers",
-  "Candy canes",
-  "Lollipops",
-  "Eggo bites",
-  "Pancake bites",
-  "Pop-Tarts chunks",
-  "Ice cream cones",
-  "Mini muffins",
-  "Cereal bars",
-  "Granola bars",
-  "Puffed rice cakes",
-  "S\u2019mores station"
+  "Apple slices","Pear wedges","Marshmallows","Rice Krispie treats","Pretzel rods","Pretzel twists","Pretzel sticks",
+  "Angel food cake cubes","Pound cake bites","Graham crackers","Teddy Grahams","Mini donuts","Donut holes","Waffle cone chunks",
+  "Brownie bites","Potato chips","Cheese cubes","Twinkies","Little Debbie snack cakes","Dried mango","Dried apricots","Dried figs",
+  "Banana chips","Dried cranberries","Frozen banana slices","Mini pancakes","Mini waffles","Churro bites","Popcorn balls",
+  "Caramel corn clusters","Fortune cookies","Rice cakes","Saltines","Ritz crackers","Pita chips","Graham pita chips","Bugles",
+  "Cinnamon rolls","Cornbread cubes","Chopped peanuts","Almonds","Pecans","Cashews","Walnuts","Crushed Oreos","Crumbled graham crackers",
+  "Crushed pretzels","Granola","Toffee bits","Corn flakes","Fruity Pebbles","Fruit Loops","Cap’n Crunch","Lucky Charms marshmallows",
+  "Rainbow sprinkles","Star sprinkles","Heart sprinkles","Nerds","Pop Rocks","Skittles minis","M&Ms","Cotton candy bits","Edible glitter",
+  "Luster dust","Sour gummy worms","Gummy bears","Mini marshmallows","Shredded coconut","White chocolate chips","Dark chocolate chips",
+  "Butterscotch chips","Cinnamon sugar","Crushed candy canes","Caramel drizzle","Cookie crumbs","Nilla wafers","Biscoff","Chocolate chip cookies",
+  "Churro dust","Reeses Pieces","Peanut butter cups","Dried cranberry bits","Crushed banana chips","Marshmallow fluff drizzle",
+  "Strawberries","Pineapple chunks","Grapes","Orange wedges","Clementine segments","Kiwi slices","Raspberries","Blackberries",
+  "Dried dates","Coconut chunks","Chips Ahoy","Mini chocolate chip cookies","Shortbread cookies","Biscotti","Cheesecake cubes",
+  "Mini churros","Mini Pop-Tarts","Stroopwafels","Pringles","Cocoa Pebbles","Apple Jacks","Swedish Fish","Sour Patch Kids",
+  "Twizzlers","Candy canes","Lollipops","Eggo bites","Pancake bites","Pop-Tarts chunks","Ice cream cones","Mini muffins",
+  "Cereal bars","Granola bars","Puffed rice cakes","S’mores station"
 ];
 const AGREED_KEY = 'waiver_accepted_v3'
 
 export default function Home(){
-  const [email, setEmail] = useState('');
   const [name, setName] = useState('')
+  const [email, setEmail] = useState('')   // added email state
   const [count, setCount] = useState(1)
   const [guests, setGuests] = useState([])
   const [loading, setLoading] = useState(false)
@@ -141,10 +37,13 @@ export default function Home(){
   const [allergyName, setAllergyName] = useState('')
   const [allergyNote, setAllergyNote] = useState('')
 
-  useEffect(()=>{ setAgreed(typeof window!=='undefined' && localStorage.getItem(AGREED_KEY)==='1') }, [])
+  useEffect(()=>{ 
+    setAgreed(typeof window!=='undefined' && localStorage.getItem(AGREED_KEY)==='1') 
+  }, [])
 
   async function loadAll(){
-    try{ setError('')
+    try{ 
+      setError('')
       const [rsvpRes, claimsRes, allergyRes] = await Promise.all([
         fetch('/.netlify/functions/rsvp'),
         fetch('/.netlify/functions/checklist'),
@@ -158,10 +57,15 @@ export default function Home(){
       setAllergies(allergyData.rows || [])
       const map = {}
       const serverItems = new Set()
-      for(const row of (claimsData.rows||[])){ map[row.item] = !!row.claimed; serverItems.add(row.item) }
+      for(const row of (claimsData.rows||[])){ 
+        map[row.item] = !!row.claimed; 
+        serverItems.add(row.item) 
+      }
       setItems(Array.from(new Set([...serverItems, ...itemsSeed])))
       setClaimed(map)
-    }catch(e){ setError('Could not load from database. Check Netlify env keys & functions.') }
+    }catch(e){ 
+      setError('Could not load from database. Check Netlify env keys & functions.') 
+    }
   }
   useEffect(()=>{ loadAll() }, [])
 
@@ -169,16 +73,29 @@ export default function Home(){
     e.preventDefault()
     if(!agreed){ alert('Please read and accept the Release of Liability first.'); return }
     if(!name) return
+
     setLoading(true); setError('')
     try{
       const res = await fetch('/.netlify/functions/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, count: Number(count)||1, agreed:true })
+        body: JSON.stringify({ 
+          name, 
+          email,            // send email along with RSVP
+          count: Number(count)||1, 
+          agreed:true, 
+          method:'checkbox' 
+        })
       })
-      if(!res.ok) throw new Error('Save failed')
-      setName(''); setCount(1); await loadAll()
-    }catch{ setError('Could not save RSVP') } finally { setLoading(false) }
+      const data = await res.json().catch(()=>({}))
+      if(!res.ok || data?.ok === false) throw new Error('Save failed')
+      setName(''); setEmail(''); setCount(1)
+      await loadAll()
+    }catch{ 
+      setError('Could not save RSVP') 
+    } finally { 
+      setLoading(false) 
+    }
   }
 
   async function toggle(item){
@@ -193,7 +110,10 @@ export default function Home(){
       })
       if(!res.ok) throw new Error('bad')
       setSaveState('saved'); setTimeout(()=>setSaveState(''),1200)
-    }catch(e){ setSaveState('error'); setClaimed(p=>({ ...p, [item]: !next })) }
+    }catch(e){ 
+      setSaveState('error'); 
+      setClaimed(p=>({ ...p, [item]: !next })) 
+    }
   }
 
   async function addItem(e){
@@ -212,29 +132,12 @@ export default function Home(){
       })
       if(!res.ok) throw new Error('bad')
       setSaveState('saved'); setTimeout(()=>setSaveState(''),1200)
-    }catch(e){ setSaveState('error'); setItems(prev=>prev.filter(x=>x!==item)); const cp={...claimed}; delete cp[item]; setClaimed(cp) }
+    }catch(e){ 
+      setSaveState('error'); 
+      setItems(prev=>prev.filter(x=>x!==item)); 
+      const cp={...claimed}; delete cp[item]; setClaimed(cp) 
+    }
   }
-
-  // state
-const [email, setEmail] = useState('');
-
-// in the form (RSVP section)
-<input value={email} onChange={e=>setEmail(e.target.value)}
-       placeholder="Email (optional)" className="border p-2 rounded" disabled={!agreed} />
-
-// in submit()
-const res = await fetch('/.netlify/functions/rsvp', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    name,
-    email,                     // <-- add this
-    count: Number(count)||1,
-    agreed: true,
-    method: 'checkbox'
-  })
-});
-
 
   async function addAllergy(e){
     e.preventDefault()
@@ -280,7 +183,7 @@ const res = await fetch('/.netlify/functions/rsvp', {
           </div>
         </div>
 
-        {/* TOP (RSVP) tilted */}
+        {/* RSVP */}
         <section className="section-card backdrop-blur p-6 rounded-2xl shadow-xl border-4 border-pink-300 rotate-2">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold mb-3">RSVP</h2>
@@ -290,8 +193,9 @@ const res = await fetch('/.netlify/functions/rsvp', {
               {saveState==='error' && <span className="badge bg-red-200 text-red-900">Not saved</span>}
             </div>
           </div>
-          <form onSubmit={submit} className={`grid grid-cols-1 md:grid-cols-3 gap-3 ${!agreed ? 'opacity-50' : ''}`}>
+          <form onSubmit={submit} className={`grid grid-cols-1 md:grid-cols-4 gap-3 ${!agreed ? 'opacity-50' : ''}`}>
             <input value={name} onChange={e=>setName(e.target.value)} placeholder="Your Name" className="border p-2 rounded" disabled={!agreed} />
+            <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email (optional)" className="border p-2 rounded" disabled={!agreed} />
             <input type="number" min="1" value={count} onChange={e=>setCount(e.target.value)} placeholder="# of people" className="border p-2 rounded" disabled={!agreed} />
             <button className="bg-green-500 hover:bg-green-600 text-white p-2 rounded" disabled={loading||!agreed}>{loading ? 'Saving...' : 'Add RSVP'}</button>
           </form>
@@ -301,7 +205,7 @@ const res = await fetch('/.netlify/functions/rsvp', {
           </ul>
         </section>
 
-        {/* Suggestions flat */}
+        {/* Suggestions */}
         <section className="section-card backdrop-blur p-6 rounded-2xl shadow-xl border-4 border-yellow-300">
           <h2 className="text-2xl font-bold mb-3">Suggestions to Bring</h2>
           <form onSubmit={addItem} className="flex gap-2 mb-4">
@@ -309,28 +213,24 @@ const res = await fetch('/.netlify/functions/rsvp', {
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Add</button>
           </form>
           <ul className="space-y-2">
-            {items.map((item)=>(
-              <li key={item} className="flex items-center gap-2">
-                <input type="checkbox" checked={!!claimed[item]} onChange={()=>toggle(item)} />
-                <span className={claimed[item] ? 'line-through opacity-70' : ''}>{item}</span>
-              </li>
-            ))}
+            {items.map((item)=>(<li key={item} className="flex items-center gap-2">
+              <input type="checkbox" checked={!!claimed[item]} onChange={()=>toggle(item)} />
+              <span className={claimed[item] ? 'line-through opacity-70' : ''}>{item}</span>
+            </li>))}
           </ul>
         </section>
 
         {/* Allergies */}
         <section className="section-card backdrop-blur p-6 rounded-2xl shadow-xl border-4 border-red-300">
           <h2 className="text-2xl font-bold mb-3">I have an allergy! <span aria-hidden>🛟</span></h2>
-          <p className="text-sm text-gray-700 mb-3">Share helpful info so the snack bar stays friendly. (Examples: “Peanuts”, “Dairy”, "Bullshit", “Gluten”, “Gelatin”, “Food dye #40”, "Fun".)</p>
+          <p className="text-sm text-gray-700 mb-3">Share helpful info so the snack bar stays friendly. (Examples: “Peanuts”, “Dairy”, "Gluten", "Food dye #40".)</p>
           <form onSubmit={addAllergy} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <input value={allergyName} onChange={e=>setAllergyName(e.target.value)} placeholder="Your name (optional)" className="border p-2 rounded" />
             <input value={allergyNote} onChange={e=>setAllergyNote(e.target.value)} placeholder="Allergy / note (required)" className="border p-2 rounded md:col-span-1" />
             <button className="bg-rose-600 hover:bg-rose-700 text-white p-2 rounded">Add allergy</button>
           </form>
           <ul className="space-y-1">
-            {allergies.map((a,i)=>(
-              <li key={i}>🛟 <strong>{a.name || 'Guest'}</strong>: {a.note}</li>
-            ))}
+            {allergies.map((a,i)=>(<li key={i}>🛟 <strong>{a.name || 'Guest'}</strong>: {a.note}</li>))}
           </ul>
         </section>
 
