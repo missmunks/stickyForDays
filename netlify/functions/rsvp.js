@@ -1,3 +1,27 @@
+// ---- shared helpers (paste into each function file) ----
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
+};
+
+function getAdminToken(event) {
+  const h = event.headers || {};
+  // Authorization: Bearer <token>
+  const auth = h.authorization || h.Authorization || '';
+  const bearer = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  // x-admin-token: <token>
+  const xhdr = h['x-admin-token'] || h['X-Admin-Token'] || '';
+  // ?token=<token> as a last resort
+  const qs = event.queryStringParameters?.token || '';
+  return bearer || xhdr || qs || '';
+}
+function isAdmin(event) {
+  const t = getAdminToken(event);
+  return t && t === (process.env.ADMIN_TOKEN || '');
+}
+
+
 // netlify/functions/rsvp.js
 const { createClient } = require('@supabase/supabase-js');
 
