@@ -2,26 +2,20 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 
 export default function Admin() {
-  // ---------------- Gate ----------------
+  // ---------- Login gate ----------
   const [tokenInput, setTokenInput] = useState('');
+  const [token, setToken] = useState('');
   const [authed, setAuthed] = useState(false);
   const [gateError, setGateError] = useState('');
 
-  // Keep token in memory for all calls
-  const [token, setToken] = useState('');
   useEffect(() => {
     const saved = sessionStorage.getItem('ADMIN_TOKEN') || '';
-    if (saved) {
-      // try to auto-verify
-      setTokenInput(saved);
-      verifyToken(saved, { silent: true });
-    }
+    if (saved) verifyToken(saved, { silent: true });
   }, []);
 
   async function verifyToken(value, { silent = false } = {}) {
     try {
       setGateError('');
-      // simple verification: call the admin endpoint and expect 200
       const res = await fetch('/.netlify/functions/rsvp?admin=1', {
         headers: { Authorization: `Bearer ${value}` },
       });
@@ -29,8 +23,7 @@ export default function Admin() {
       setAuthed(true);
       setToken(value);
       sessionStorage.setItem('ADMIN_TOKEN', value);
-      // initial load once authed
-      await Promise.all([loadRSVPs(value), loadWaivers(value), loadAllergies()]);
+      await Promise.all([loadRSVPs(value), loadWaivers(value), loadAllergies(value)]);
     } catch {
       if (!silent) setGateError('Invalid admin token');
       setAuthed(false);
@@ -39,7 +32,7 @@ export default function Admin() {
     }
   }
 
-  // ---------------- RSVPs ----------------
+  // ---------- RSVPs ----------
   const [rsvps, setRsvps] = useState([]);
   const [rsvpError, setRsvpError] = useState('');
   const [rsvpBusy, setRsvpBusy] = useState(false);
@@ -48,7 +41,7 @@ export default function Admin() {
     try {
       setRsvpError('');
       const res = await fetch('/.netlify/functions/rsvp?admin=1', {
-        headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+        headers: { Authorization: `Bearer ${tok}` },
       });
       if (!res.ok) throw new Error('auth');
       const data = await res.json();
@@ -66,7 +59,7 @@ export default function Admin() {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ id }),
       });
@@ -79,29 +72,21 @@ export default function Admin() {
     }
   }
 
-  const total = useMemo(
-    () => rsvps.reduce((a, r) => a + (r.count || 1), 0),
-    [rsvps]
-  );
+  const total = useMemo(() => rsvps.reduce((a, r) => a + (r.count || 1), 0), [rsvps]);
 
   async function downloadRSVPCsv() {
     const res = await fetch('/.netlify/functions/rsvp?format=csv&admin=1', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) {
-      alert('CSV download failed (check token).');
-      return;
-    }
+    if (!res.ok) return alert('CSV download failed (check token).');
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = 'rsvps.csv';
-    a.click();
+    a.href = url; a.download = 'rsvps.csv'; a.click();
     URL.revokeObjectURL(url);
   }
 
-  // ---------------- Waivers ----------------
+  // ---------- Waivers ----------
   const [waivers, setWaivers] = useState([]);
   const [waiverError, setWaiverError] = useState('');
 
@@ -109,7 +94,7 @@ export default function Admin() {
     try {
       setWaiverError('');
       const res = await fetch('/.netlify/functions/waivers', {
-        headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+        headers: { Authorization: `Bearer ${tok}` },
       });
       if (!res.ok) throw new Error('auth');
       const data = await res.json();
@@ -121,30 +106,24 @@ export default function Admin() {
 
   async function downloadWaiverCsv() {
     const res = await fetch('/.netlify/functions/waivers?format=csv', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) {
-      alert('Waiver CSV download failed (check token).');
-      return;
-    }
+    if (!res.ok) return alert('Waiver CSV download failed (check token).');
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = 'waivers.csv';
-    a.click();
+    a.href = url; a.download = 'waivers.csv'; a.click();
     URL.revokeObjectURL(url);
   }
 
-  // ---------------- Allergies ----------------
+  // ---------- Allergies ----------
   const [allergies, setAllergies] = useState([]);
   const [aLoading, setALoading] = useState(false);
   const [aError, setAError] = useState('');
 
   async function loadAllergies() {
     try {
-      setALoading(true);
-      setAError('');
+      setALoading(true); setAError('');
       const res = await fetch('/.netlify/functions/allergies');
       if (!res.ok) throw new Error('load');
       const data = await res.json();
@@ -157,17 +136,13 @@ export default function Admin() {
   }
 
   async function deleteAllergy(id) {
-    if (!token) {
-      alert('Missing admin token');
-      return;
-    }
     if (!confirm('Delete this allergy entry?')) return;
     try {
       const res = await fetch(`/.netlify/functions/allergies?id=${id}`, {
         method: 'DELETE',
-        headers: { 'x-admin-token': token },
+        headers: { Authorization: `Bearer ${token}` }, // unified header
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || data?.ok !== true) throw new Error(data?.error || 'Delete failed');
       setAllergies(prev => prev.filter(a => a.id !== id));
     } catch (e) {
@@ -175,7 +150,7 @@ export default function Admin() {
     }
   }
 
-  // ---------------- Render ----------------
+  // ---------- Render ----------
   if (!authed) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-6">
@@ -184,9 +159,7 @@ export default function Admin() {
             <h1 className="text-2xl font-bold">Admin Login</h1>
             <Link href="/" className="underline text-blue-600">← Back</Link>
           </div>
-          <p className="text-sm text-gray-600 mb-4">
-            Enter the admin token to view the dashboard.
-          </p>
+          <p className="text-sm text-gray-600 mb-4">Enter the admin token to view the dashboard.</p>
           <input
             type="password"
             className="border p-2 rounded w-full mb-3"
@@ -215,11 +188,7 @@ export default function Admin() {
             <Link href="/" className="underline text-blue-600">← Back</Link>
             <button
               className="text-sm text-gray-600 underline"
-              onClick={() => {
-                setAuthed(false);
-                setToken('');
-                sessionStorage.removeItem('ADMIN_TOKEN');
-              }}
+              onClick={() => { setAuthed(false); setToken(''); sessionStorage.removeItem('ADMIN_TOKEN'); }}
             >
               Sign out
             </button>
@@ -256,9 +225,7 @@ export default function Admin() {
                   </td>
                 </tr>
               ))}
-              {rsvps.length === 0 && (
-                <tr><td colSpan="4" className="p-2 text-center text-gray-600 italic">No RSVPs yet.</td></tr>
-              )}
+              {rsvps.length === 0 && <tr><td colSpan="4" className="p-2 text-center text-gray-600 italic">No RSVPs yet.</td></tr>}
             </tbody>
           </table>
           <p className="mt-4 font-semibold">Total people expected: {total}</p>
@@ -298,9 +265,7 @@ export default function Admin() {
                   <td className="p-2 border" style={{maxWidth: 280, overflowWrap: 'anywhere'}}>{w.user_agent || ''}</td>
                 </tr>
               ))}
-              {waivers.length === 0 && (
-                <tr><td colSpan="7" className="p-2 text-center text-gray-600 italic">No waiver logs yet.</td></tr>
-              )}
+              {waivers.length === 0 && <tr><td colSpan="7" className="p-2 text-center text-gray-600 italic">No waiver logs yet.</td></tr>}
             </tbody>
           </table>
         </section>
@@ -333,9 +298,7 @@ export default function Admin() {
                     </td>
                   </tr>
                 ))}
-                {allergies.length === 0 && (
-                  <tr><td colSpan="4" className="p-2 text-center text-gray-600 italic">No allergies yet.</td></tr>
-                )}
+                {allergies.length === 0 && <tr><td colSpan="4" className="p-2 text-center text-gray-600 italic">No allergies yet.</td></tr>}
               </tbody>
             </table>
           )}

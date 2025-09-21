@@ -2,22 +2,22 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 const itemsSeed = [
-  "Apple slices","Pear wedges","Marshmallows","Rice Krispie treats","Pretzel rods","Pretzel twists","Pretzel sticks",
+  "Pear wedges","Marshmallows","Rice Krispie treats","Pretzel rods",
   "Angel food cake cubes","Pound cake bites","Graham crackers","Teddy Grahams","Mini donuts","Donut holes","Waffle cone chunks",
-  "Brownie bites","Potato chips","Cheese cubes","Twinkies","Little Debbie snack cakes","Dried mango","Dried apricots","Dried figs",
-  "Banana chips","Dried cranberries","Frozen banana slices","Mini pancakes","Mini waffles","Churro bites","Popcorn balls",
+  "Brownie bites","Potato chips","Cheese cubes","Twinkies","Little Debbie snack cakes","Dried mango","Dried apricots",
+  "Dried cranberries","Mini pancakes","Mini waffles","Churro bites","Popcorn balls",
   "Caramel corn clusters","Fortune cookies","Rice cakes","Saltines","Ritz crackers","Pita chips","Graham pita chips","Bugles",
   "Cinnamon rolls","Cornbread cubes","Chopped peanuts","Almonds","Pecans","Cashews","Walnuts","Crushed Oreos","Crumbled graham crackers",
   "Crushed pretzels","Granola","Toffee bits","Corn flakes","Fruity Pebbles","Fruit Loops","Cap’n Crunch","Lucky Charms marshmallows",
-  "Rainbow sprinkles","Star sprinkles","Heart sprinkles","Nerds","Pop Rocks","Skittles minis","M&Ms","Cotton candy bits","Edible glitter",
+  "Sprinkles","Nerds","Pop Rocks","Skittles minis","M&Ms","Cotton candy bits","Edible glitter",
   "Luster dust","Sour gummy worms","Gummy bears","Mini marshmallows","Shredded coconut","White chocolate chips","Dark chocolate chips",
   "Butterscotch chips","Cinnamon sugar","Crushed candy canes","Caramel drizzle","Cookie crumbs","Nilla wafers","Biscoff","Chocolate chip cookies",
-  "Churro dust","Reeses Pieces","Peanut butter cups","Dried cranberry bits","Crushed banana chips","Marshmallow fluff drizzle",
+  "Churro dust","Reeses Pieces","Peanut butter cups","Marshmallow fluff drizzle",
   "Strawberries","Pineapple chunks","Grapes","Orange wedges","Clementine segments","Kiwi slices","Raspberries","Blackberries",
   "Dried dates","Coconut chunks","Chips Ahoy","Mini chocolate chip cookies","Shortbread cookies","Biscotti","Cheesecake cubes",
   "Mini churros","Mini Pop-Tarts","Stroopwafels","Pringles","Cocoa Pebbles","Apple Jacks","Swedish Fish","Sour Patch Kids",
   "Twizzlers","Candy canes","Lollipops","Eggo bites","Pancake bites","Pop-Tarts chunks","Ice cream cones","Mini muffins",
-  "Cereal bars","Granola bars","Puffed rice cakes","S’mores station"
+  "Cereal bars","Granola bars","Puffed rice cakes"
 ];
 const AGREED_KEY = 'waiver_accepted_v3'
 
@@ -170,11 +170,7 @@ export default function Home(){
       <main className="relative z-10 max-w-4xl mx-auto p-6 space-y-6">
         <div className="text-center">
 
-          <h2 className="text-5xl md:text-6xl font-extrabold mb-1">Caramel Apple / Pumpkin Art</h2>
-
-          <h1 class="chaos">C H A O S</h1>
-          
-          <p className="text-center text-base mb-3">Sunday, October 12 — Bring a pumpkin to paint + a topping to share!</p>
+          <img src="/img/top.png" />
           {!agreed && (
             <div className="bg-yellow-100 text-yellow-900 border border-yellow-300 rounded-lg p-3 inline-block">
               Please read and accept the <Link href="/release" className="underline font-semibold">Release of Liability</Link> to enable RSVPs.
