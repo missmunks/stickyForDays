@@ -170,7 +170,10 @@ export default function Home(){
       <main className="relative z-10 max-w-4xl mx-auto p-6 space-y-6">
         <div className="text-center">
 
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-1">Caramel Apple / Pumpkin Art</h1>
+          <h2 className="text-5xl md:text-6xl font-extrabold mb-1">Caramel Apple / Pumpkin Art</h2>
+
+          <h1 class="chaos">C H A O S</h1>
+          
           <p className="text-center text-base mb-3">Sunday, October 12 — Bring a pumpkin to paint + a topping to share!</p>
           {!agreed && (
             <div className="bg-yellow-100 text-yellow-900 border border-yellow-300 rounded-lg p-3 inline-block">
