@@ -170,7 +170,7 @@ export default function Home(){
       <main className="relative z-10 max-w-4xl mx-auto p-6 space-y-6">
         <div className="text-center">
 
-          <img src="/public/img/top.png" />
+          <img src="/img/top.png" />
           {!agreed && (
             <div className="bg-yellow-100 text-yellow-900 border border-yellow-300 rounded-lg p-3 inline-block">
               Please read and accept the <Link href="/release" className="underline font-semibold">Release of Liability</Link> to enable RSVPs.
