@@ -1,124 +1,171 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 
-export default function Admin(){
-  // ---- RSVPs ----
-  const [token, setToken] = useState('')
-  const [rows, setRows] = useState([])
-  const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
+export default function Admin() {
+  // ---------------- Gate ----------------
+  const [tokenInput, setTokenInput] = useState('');
+  const [authed, setAuthed] = useState(false);
+  const [gateError, setGateError] = useState('');
 
-  async function loadRSVPs(){
-    try{
-      setError('')
+  // Keep token in memory for all calls
+  const [token, setToken] = useState('');
+  useEffect(() => {
+    const saved = sessionStorage.getItem('ADMIN_TOKEN') || '';
+    if (saved) {
+      // try to auto-verify
+      setTokenInput(saved);
+      verifyToken(saved, { silent: true });
+    }
+  }, []);
+
+  async function verifyToken(value, { silent = false } = {}) {
+    try {
+      setGateError('');
+      // simple verification: call the admin endpoint and expect 200
       const res = await fetch('/.netlify/functions/rsvp?admin=1', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      })
-      if(!res.ok) throw new Error('auth')
-      const data = await res.json()
-      setRows(data.rows || [])
-    }catch(e){
-      setError('Could not load (check admin token or functions)')
+        headers: { Authorization: `Bearer ${value}` },
+      });
+      if (!res.ok) throw new Error('Unauthorized');
+      setAuthed(true);
+      setToken(value);
+      sessionStorage.setItem('ADMIN_TOKEN', value);
+      // initial load once authed
+      await Promise.all([loadRSVPs(value), loadWaivers(value), loadAllergies()]);
+    } catch {
+      if (!silent) setGateError('Invalid admin token');
+      setAuthed(false);
+      setToken('');
+      sessionStorage.removeItem('ADMIN_TOKEN');
     }
   }
-  useEffect(()=>{ if(token) loadRSVPs() }, [token])
 
-  async function delRSVP(id){
-    if(!confirm('Delete this RSVP?')) return
-    setBusy(true)
-    try{
+  // ---------------- RSVPs ----------------
+  const [rsvps, setRsvps] = useState([]);
+  const [rsvpError, setRsvpError] = useState('');
+  const [rsvpBusy, setRsvpBusy] = useState(false);
+
+  async function loadRSVPs(tok = token) {
+    try {
+      setRsvpError('');
+      const res = await fetch('/.netlify/functions/rsvp?admin=1', {
+        headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+      });
+      if (!res.ok) throw new Error('auth');
+      const data = await res.json();
+      setRsvps(data.rows || []);
+    } catch {
+      setRsvpError('Could not load RSVPs (check admin token or functions).');
+    }
+  }
+
+  async function deleteRSVP(id) {
+    if (!confirm('Delete this RSVP?')) return;
+    setRsvpBusy(true);
+    try {
       const res = await fetch('/.netlify/functions/rsvp', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ id })
-      })
-      if(!res.ok) throw new Error('delete failed')
-      await loadRSVPs()
-    }catch(e){
-      setError('Delete failed (check token)')
-    }finally{
-      setBusy(false)
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error('delete failed');
+      await loadRSVPs();
+    } catch {
+      setRsvpError('Delete failed (check token).');
+    } finally {
+      setRsvpBusy(false);
     }
   }
 
-  const total = useMemo(()=>rows.reduce((a,r)=>a + (r.count||1),0),[rows])
+  const total = useMemo(
+    () => rsvps.reduce((a, r) => a + (r.count || 1), 0),
+    [rsvps]
+  );
 
-  async function downloadRSVPsCSV(){
+  async function downloadRSVPCsv() {
     const res = await fetch('/.netlify/functions/rsvp?format=csv&admin=1', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    })
-    if(!res.ok){ alert('CSV download failed (check token)'); return }
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'rsvps.csv'
-    a.click()
-    URL.revokeObjectURL(url)
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      alert('CSV download failed (check token).');
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rsvps.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
-  // ---- Waiver Logs ----
-  const [wRows, setWRows] = useState([])
-  const [wError, setWError] = useState('')
+  // ---------------- Waivers ----------------
+  const [waivers, setWaivers] = useState([]);
+  const [waiverError, setWaiverError] = useState('');
 
-  async function loadWaivers(){
-    try{
-      setWError('')
+  async function loadWaivers(tok = token) {
+    try {
+      setWaiverError('');
       const res = await fetch('/.netlify/functions/waivers', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      })
-      if(!res.ok) throw new Error('auth')
-      const data = await res.json()
-      setWRows(data.rows || [])
-    }catch(e){
-      setWError('Could not load waivers (check admin token or functions)')
+        headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+      });
+      if (!res.ok) throw new Error('auth');
+      const data = await res.json();
+      setWaivers(data.rows || []);
+    } catch {
+      setWaiverError('Could not load waivers (check admin token or functions).');
     }
   }
 
-  async function downloadWaiversCSV(){
+  async function downloadWaiverCsv() {
     const res = await fetch('/.netlify/functions/waivers?format=csv', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    })
-    if(!res.ok){ alert('Waiver CSV download failed (check token)'); return }
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'waivers.csv'
-    a.click()
-    URL.revokeObjectURL(url)
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      alert('Waiver CSV download failed (check token).');
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'waivers.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
-  // ---- Allergies ----
-  const [adminToken, setAdminToken] = useState('')  // separate header for allergies delete
-  const [allergies, setAllergies] = useState([])
-  const [aLoading, setALoading] = useState(false)
-  const [aError, setAError] = useState('')
+  // ---------------- Allergies ----------------
+  const [allergies, setAllergies] = useState([]);
+  const [aLoading, setALoading] = useState(false);
+  const [aError, setAError] = useState('');
 
   async function loadAllergies() {
     try {
-      setALoading(true); setAError('');
+      setALoading(true);
+      setAError('');
       const res = await fetch('/.netlify/functions/allergies');
-      if (!res.ok) throw new Error('Failed to load');
+      if (!res.ok) throw new Error('load');
       const data = await res.json();
       setAllergies(data.rows || []);
-    } catch (e) {
-      setAError('Could not load allergies');
+    } catch {
+      setAError('Could not load allergies.');
     } finally {
       setALoading(false);
     }
   }
 
   async function deleteAllergy(id) {
-    if (!adminToken) { alert('Enter admin token'); return; }
+    if (!token) {
+      alert('Missing admin token');
+      return;
+    }
     if (!confirm('Delete this allergy entry?')) return;
     try {
       const res = await fetch(`/.netlify/functions/allergies?id=${id}`, {
         method: 'DELETE',
-        headers: { 'x-admin-token': adminToken },
+        headers: { 'x-admin-token': token },
       });
       const data = await res.json();
       if (!res.ok || data?.ok !== true) throw new Error(data?.error || 'Delete failed');
@@ -128,34 +175,68 @@ export default function Admin(){
     }
   }
 
-  // ---- Render ----
+  // ---------------- Render ----------------
+  if (!authed) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-6">
+        <div className="max-w-md mx-auto bg-white rounded-2xl shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold">Admin Login</h1>
+            <Link href="/" className="underline text-blue-600">← Back</Link>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Enter the admin token to view the dashboard.
+          </p>
+          <input
+            type="password"
+            className="border p-2 rounded w-full mb-3"
+            placeholder="Admin token"
+            value={tokenInput}
+            onChange={e => setTokenInput(e.target.value)}
+          />
+          {gateError && <p className="text-red-600 mb-3">{gateError}</p>}
+          <button
+            onClick={() => verifyToken(tokenInput)}
+            className="bg-blue-600 text-white px-4 py-2 rounded w-full"
+          >
+            Unlock Admin
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-6">
       <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow p-6 space-y-10">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Admin — Caramel Apple / Pumpkin Art / Chaos</h1>
-          <Link href="/" className="underline text-blue-600">← Back to site</Link>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="underline text-blue-600">← Back</Link>
+            <button
+              className="text-sm text-gray-600 underline"
+              onClick={() => {
+                setAuthed(false);
+                setToken('');
+                sessionStorage.removeItem('ADMIN_TOKEN');
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         </div>
-
-        {/* Shared admin token for RSVPs + Waivers */}
-        <label className="block mb-4">
-          <span className="text-sm font-medium">Admin Token (Netlify env: ADMIN_TOKEN)</span>
-          <input type="password" className="border p-2 rounded w-full" value={token} onChange={e=>setToken(e.target.value)} placeholder="Paste token to unlock" />
-        </label>
 
         {/* RSVPs */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-2xl font-bold">RSVPs</h2>
             <div className="flex gap-2">
-              <button onClick={loadRSVPs} className="bg-blue-600 text-white px-4 py-2 rounded">Refresh</button>
-              <button onClick={downloadRSVPsCSV} className="bg-emerald-600 text-white px-4 py-2 rounded">Download CSV</button>
+              <button onClick={() => loadRSVPs()} className="bg-blue-600 text-white px-4 py-2 rounded">Refresh</button>
+              <button onClick={downloadRSVPCsv} className="bg-emerald-600 text-white px-4 py-2 rounded">Download CSV</button>
             </div>
           </div>
-
-          {error && <p className="text-red-600 mb-3">{error}</p>}
-
-          <table className="w-full border">
+          {rsvpError && <p className="text-red-600 mb-3">{rsvpError}</p>}
+          <table className="w-full border text-sm">
             <thead>
               <tr className="bg-gray-100">
                 <th className="p-2 border">Name</th>
@@ -165,19 +246,21 @@ export default function Admin(){
               </tr>
             </thead>
             <tbody>
-              {rows.map(r => (
+              {rsvps.map(r => (
                 <tr key={r.id}>
                   <td className="p-2 border">{r.name}</td>
                   <td className="p-2 border text-center">{r.count}</td>
                   <td className="p-2 border">{new Date(r.created_at).toLocaleString()}</td>
                   <td className="p-2 border text-center">
-                    <button disabled={busy} onClick={()=>delRSVP(r.id)} className="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
+                    <button disabled={rsvpBusy} onClick={() => deleteRSVP(r.id)} className="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
                   </td>
                 </tr>
               ))}
+              {rsvps.length === 0 && (
+                <tr><td colSpan="4" className="p-2 text-center text-gray-600 italic">No RSVPs yet.</td></tr>
+              )}
             </tbody>
           </table>
-
           <p className="mt-4 font-semibold">Total people expected: {total}</p>
         </section>
 
@@ -186,13 +269,11 @@ export default function Admin(){
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-2xl font-bold">Waiver Logs</h2>
             <div className="flex gap-2">
-              <button onClick={loadWaivers} className="bg-blue-600 text-white px-4 py-2 rounded">Refresh</button>
-              <button onClick={downloadWaiversCSV} className="bg-emerald-600 text-white px-4 py-2 rounded">Download CSV</button>
+              <button onClick={() => loadWaivers()} className="bg-blue-600 text-white px-4 py-2 rounded">Refresh</button>
+              <button onClick={downloadWaiverCsv} className="bg-emerald-600 text-white px-4 py-2 rounded">Download CSV</button>
             </div>
           </div>
-
-          {wError && <p className="text-red-600 mb-3">{wError}</p>}
-
+          {waiverError && <p className="text-red-600 mb-3">{waiverError}</p>}
           <table className="w-full text-sm border">
             <thead>
               <tr className="bg-gray-100">
@@ -206,7 +287,7 @@ export default function Admin(){
               </tr>
             </thead>
             <tbody>
-              {wRows.map(w=>(
+              {waivers.map(w => (
                 <tr key={w.id}>
                   <td className="p-2 border">{new Date(w.agreed_at).toLocaleString()}</td>
                   <td className="p-2 border">{w.name}</td>
@@ -217,8 +298,8 @@ export default function Admin(){
                   <td className="p-2 border" style={{maxWidth: 280, overflowWrap: 'anywhere'}}>{w.user_agent || ''}</td>
                 </tr>
               ))}
-              {wRows.length===0 && (
-                <tr><td colSpan="7" className="p-2 border text-center text-gray-600 italic">No waiver logs yet.</td></tr>
+              {waivers.length === 0 && (
+                <tr><td colSpan="7" className="p-2 text-center text-gray-600 italic">No waiver logs yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -226,38 +307,40 @@ export default function Admin(){
 
         {/* Allergies */}
         <section className="section-card p-4 border rounded">
-          <h2 className="text-xl font-bold mb-2">Allergies (Admin)</h2>
-          <div className="flex gap-2 mb-3">
-            <input
-              type="password"
-              placeholder="Admin token (for deletes)"
-              value={adminToken}
-              onChange={e=>setAdminToken(e.target.value)}
-              className="border p-2 rounded"
-            />
-            <button onClick={loadAllergies} className="bg-blue-600 text-white px-3 py-2 rounded">Refresh</button>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-2xl font-bold">Allergies</h2>
+            <button onClick={loadAllergies} className="bg-blue-600 text-white px-4 py-2 rounded">Refresh</button>
           </div>
           {aError && <p className="text-red-600">{aError}</p>}
           {aLoading ? <p>Loading…</p> : (
             <table className="w-full text-sm">
-              <thead><tr><th className="text-left p-2 border">When</th><th className="text-left p-2 border">Name</th><th className="text-left p-2 border">Note</th><th className="p-2 border w-24"></th></tr></thead>
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="p-2 border">When</th>
+                  <th className="p-2 border">Name</th>
+                  <th className="p-2 border">Note</th>
+                  <th className="p-2 border w-24"></th>
+                </tr>
+              </thead>
               <tbody>
-                {allergies.map(a=>(
+                {allergies.map(a => (
                   <tr key={a.id}>
                     <td className="p-2 border">{new Date(a.created_at).toLocaleString()}</td>
                     <td className="p-2 border">{a.name || 'Guest'}</td>
                     <td className="p-2 border">{a.note}</td>
                     <td className="p-2 border text-right">
-                      <button onClick={()=>deleteAllergy(a.id)} className="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
+                      <button onClick={() => deleteAllergy(a.id)} className="bg-red-600 text-white px-2 py-1 rounded">Delete</button>
                     </td>
                   </tr>
                 ))}
-                {allergies.length===0 && <tr><td colSpan="4" className="italic text-gray-600 p-2 border">No allergies yet.</td></tr>}
+                {allergies.length === 0 && (
+                  <tr><td colSpan="4" className="p-2 text-center text-gray-600 italic">No allergies yet.</td></tr>
+                )}
               </tbody>
             </table>
           )}
         </section>
       </div>
     </div>
-  )
+  );
 }

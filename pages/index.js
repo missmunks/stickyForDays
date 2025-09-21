@@ -169,9 +169,9 @@ export default function Home(){
 
       <main className="relative z-10 max-w-4xl mx-auto p-6 space-y-6">
         <div className="text-center">
-          <p className="kicker text-pink-600">Caramel Apple / Pumpkin Art / Chaos</p>
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-1">🍏 Party Time 🎉</h1>
-          <p className="text-center text-base mb-3">Sunday, October 21 — Bring a pumpkin to paint + a topping to share!</p>
+
+          <h1 className="text-5xl md:text-6xl font-extrabold mb-1">Caramel Apple / Pumpkin Art</h1>
+          <p className="text-center text-base mb-3">Sunday, October 12 — Bring a pumpkin to paint + a topping to share!</p>
           {!agreed && (
             <div className="bg-yellow-100 text-yellow-900 border border-yellow-300 rounded-lg p-3 inline-block">
               Please read and accept the <Link href="/release" className="underline font-semibold">Release of Liability</Link> to enable RSVPs.
@@ -209,7 +209,7 @@ export default function Home(){
         <section className="section-card backdrop-blur p-6 rounded-2xl shadow-xl border-4 border-yellow-300">
           <h2 className="text-2xl font-bold mb-3">Suggestions to Bring</h2>
           <form onSubmit={addItem} className="flex gap-2 mb-4">
-            <input value={newItem} onChange={e=>setNewItem(e.target.value)} placeholder="Add your own item (persists)" className="border p-2 rounded flex-1" />
+            <input value={newItem} onChange={e=>setNewItem(e.target.value)} placeholder="Add your own" className="border p-2 rounded flex-1" />
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Add</button>
           </form>
           <ul className="space-y-2">
@@ -223,7 +223,7 @@ export default function Home(){
         {/* Allergies */}
         <section className="section-card backdrop-blur p-6 rounded-2xl shadow-xl border-4 border-red-300">
           <h2 className="text-2xl font-bold mb-3">I have an allergy! <span aria-hidden>🛟</span></h2>
-          <p className="text-sm text-gray-700 mb-3">Share helpful info so the snack bar stays friendly. (Examples: “Peanuts”, “Dairy”, "Gluten", "Food dye #40".)</p>
+          <p className="text-sm text-gray-700 mb-3">Share helpful info so the snack bar stays friendly. (Examples: “Peanuts”, “Dairy”, "Bullshit", "Gluten", "Food dye #40", "Fun".)</p>
           <form onSubmit={addAllergy} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <input value={allergyName} onChange={e=>setAllergyName(e.target.value)} placeholder="Your name (optional)" className="border p-2 rounded" />
             <input value={allergyNote} onChange={e=>setAllergyNote(e.target.value)} placeholder="Allergy / note (required)" className="border p-2 rounded md:col-span-1" />

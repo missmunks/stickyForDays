@@ -22,6 +22,7 @@ export default function Release(){
     window.location.href='/';
   }<br />
 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-yellow-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -32,15 +33,16 @@ export default function Release(){
 <br /><br /><b>Party Reality:</b>  Gravity remains operational. Gravity is undefeated. Caramel is persuasive; chocolate is hypnotic; sprinkles migrate like colorful geese; glitter applies for permanent residency; marshmallows develop strong opinions when warmed; socks have double lives we know nothing about; paint settles in for the long haul; and time moves in “party minutes.” Hydrate, breathe, snack, repeat.
 <br /><br /><b>Lost and found policy:</b>  If it is shiny and sticky, it is probably loved and will be reunited if at all possible; if it is a sock that has found it’s way into the depths of chaos, it has been chosen.
 <br /><br /><b>Food Zone:</b> Self‑serve caramel apple bar/buffet is a choose‑your‑own adventure. Nuts may exist, dairy may lurk, candy may pop, dyes may leave you pooping blue for a week. Read labels, ask questions, and when in doubt, choose a safe option. See the “I have an allergy!” section on the main page for guest‑shared notes. We’ll do our best to keep any known allergies protected. When in doubt, try a rice cake and a hug.
-<br /><br />Trees are scenic, not trampolines; fences are fences, not balance beams;  the zip line brake calculations are based on weight, and we did the math, sooooo…... Capes are optional but do not confer the power of flight.
+<br /><br />Trees are scenic, not trampolines; fences are fences, not balance beams;  the zip line brake calculations are based on weight and pitch - and we did the math, sooooo…... Capes are optional but do not confer the power of flight.
 </p>
           <label className="block mb-3">
             <span className="text-sm font-medium">Your name (for the waiver record)</span>
             <input
               value={signerName}
               onChange={e=>setSignerName(e.target.value)}
-              placeholder="Type your name"
+              placeholder="Please enter your name to accept the waver"
               className="border p-2 rounded w-full mt-1"
+              required
             />
           </label>
 
