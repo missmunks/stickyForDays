@@ -32,7 +32,7 @@ exports.handler = async (event) => {
 
   const { data, error } = await s
     .from('waivers')
-    .select('id,name,email,contact,method,waiver_version,ip_address,user_agent,agreed_at')
+    .select('id,name,email,contact,method,waiver_version,ip_address,user_agent,agreed_at,covered_names')
     .order('agreed_at', { ascending: false });
 
   if (error) return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: error.message }) };
@@ -40,7 +40,7 @@ exports.handler = async (event) => {
   // CSV support: /waivers?format=csv
   const wantsCsv = (event.queryStringParameters?.format || '').toLowerCase() === 'csv';
   if (wantsCsv) {
-    const header = ['id','name','email','contact','method','waiver_version','ip_address','user_agent','agreed_at'];
+    const header = ['id','name','email','contact','method','waiver_version','ip_address','user_agent','agreed_at','covered_names'];
     const rows = [header.join(',')];
     for (const r of data) rows.push(header.map(k => (r[k] ?? '')).join(','));
     return { statusCode: 200, headers: { ...CORS, 'Content-Type': 'text/csv' }, body: rows.join('\n') };
