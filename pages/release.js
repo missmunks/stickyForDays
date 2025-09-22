@@ -21,6 +21,47 @@ export default function Release(){
     localStorage.setItem(AGREED_KEY,'1');
     window.location.href='/';
   }<br />
+async function handleWaiverSubmit(e) {
+  e.preventDefault();
+
+  if (!name.trim()) {
+    alert('Name is required');
+    return;
+  }
+
+  if (!agree) {
+    alert('You must accept the waiver');
+    return;
+  }
+
+  // Split covered names by newlines
+  const covered = coveredNames
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  try {
+    const res = await fetch('/.netlify/functions/waiver-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        email,
+        covered_names: covered,
+        method: 'checkbox',
+      }),
+    });
+
+    if (!res.ok) throw new Error('Failed to save waiver');
+    alert('Waiver signed successfully!');
+    setName('');
+    setEmail('');
+    setCoveredNames('');
+    setAgree(false);
+  } catch (err) {
+    alert(err.message);
+  }
+}
 
 
   return (
