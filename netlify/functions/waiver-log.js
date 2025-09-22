@@ -1,72 +1,97 @@
-// netlify/functions/waivers.js
+// netlify/functions/waiver-log.js
 const { createClient } = require('@supabase/supabase-js');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
-
-function getAdminToken(event) {
-  const h = event.headers || {};
-  const auth = h.authorization || h.Authorization || '';
-  const bearer = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  const xhdr = h['x-admin-token'] || h['X-Admin-Token'] || '';
-  const qs = event.queryStringParameters?.token || '';
-  return bearer || xhdr || qs || '';
-}
-function isAdmin(event) {
-  return getAdminToken(event) === (process.env.ADMIN_TOKEN || '');
-}
 
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: 'ok' };
-  if (event.httpMethod !== 'GET') return { statusCode: 405, headers: CORS, body: 'Method Not Allowed' };
-  if (!isAdmin(event)) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: 'Unauthorized' }) };
-
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE;
-  if (!url || !key) return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE' }) };
-
-  const s = createClient(url, key);
-  const { data, error } = await s
-    .from('waivers')
-    .select('id,name,email,contact,method,waiver_version,ip_address,user_agent,agreed_at')
-    .order('agreed_at', { ascending: false });
-
-  if (error) return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: error.message }) };
-
-  const wantsCsv = (event.queryStringParameters?.format || '').toLowerCase() === 'csv';
-  if (wantsCsv) {
-    const header = ['id','name','email','contact','method','waiver_version','ip_address','user_agent','agreed_at'];
-    const lines = [header.join(',')];
-    for (const r of data) lines.push(header.map(k => (r[k] ?? '')).join(','));
-    return { statusCode: 200, headers: { ...CORS, 'Content-Type': 'text/csv' }, body: lines.join('\n') };
+  // CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: CORS, body: 'ok' };
   }
 
-  return { statusCode: 200, headers: CORS, body: JSON.stringify({ rows: data }) };
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, headers: CORS, body: 'Method Not Allowed' };
+  }
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
+    return {
+      statusCode: 500,
+      headers: CORS,
+      body: JSON.stringify({ error: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE' }),
+    };
+  }
+
+  // Parse body safely
+  let body = {};
+  try {
+    body = JSON.parse(event.body || '{}');
+  } catch {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Invalid JSON body' }) };
+  }
+
+  // Require name
+  const name = (body.name || '').toString().trim().slice(0, 120);
+  if (!name) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Name is required' }) };
+  }
+
+  // Optional email/contact
+  const email = (body.email || '').toString().trim().slice(0, 200) || null;
+
+  // covered_names: either an array or a newline-separated string "covered"
+  let covered_names = Array.isArray(body.covered_names)
+    ? body.covered_names
+    : (body.covered || '')
+        .toString()
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+  // Basic normalization + length limits for each covered name
+  covered_names = covered_names
+    .map(s => s.slice(0, 120))
+    .slice(0, 50); // hard cap just in case
+
+  // How they agreed (optional tag)
+  const method = (body.method || 'checkbox').toString().slice(0, 40);
+
+  // Capture IP + User Agent for proof
+  const ip =
+    (event.headers['x-nf-client-connection-ip'] ||
+     event.headers['x-forwarded-for'] ||
+     event.headers['client-ip'] ||
+     '')
+      .toString()
+      .split(',')[0]
+      .trim();
+
+  const ua = (event.headers['user-agent'] || '').toString().slice(0, 1024);
+
+  try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
+
+    const insertRow = {
+      name,
+      email,                    // your table has both email and contact; we can set both
+      contact: email,
+      method,
+      waiver_version: 'v9',
+      ip_address: ip || null,
+      user_agent: ua || null,
+      covered_names: covered_names.length ? covered_names : null, // TEXT[] in your schema
+    };
+
+    const { error } = await supabase.from('waivers').insert([insertRow]);
+    if (error) throw error;
+
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true }) };
+  } catch (e) {
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+  }
 };
-const body = JSON.parse(event.body || '{}');
-const name = (body.name || '').trim();
-if (!name) {
-  return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: 'Name is required' }) };
-}
-
-const covered = Array.isArray(body.covered_names)
-  ? body.covered_names
-  : (body.covered || '')
-      .split('\n')
-      .map(s => s.trim())
-      .filter(Boolean);
-
-const { error } = await supabase
-  .from('waivers')
-  .insert([{
-    name,
-    contact: body.email || null,
-    method: body.method || 'checkbox',
-    waiver_version: 'v9',
-    ip_address: ip,
-    user_agent: ua,
-    covered_names: covered.length ? covered : null
-  }]);
