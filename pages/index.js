@@ -19,8 +19,7 @@ const itemsSeed = [
   "Twizzlers","Candy canes","Lollipops","Eggo bites","Pancake bites","Pop-Tarts chunks","Ice cream cones","Mini muffins",
   "Cereal bars","Granola bars","Puffed rice cakes"
 ];
-const AGREED_KEY = 'waiver_accepted_v3'
-const AGREED_KEYS = ['waiver_ok_session', 'waiver_accepted_v3'];
+
 
 export default function Home(){
   const [name, setName] = useState('')
@@ -38,36 +37,37 @@ export default function Home(){
   const [allergyName, setAllergyName] = useState('')
   const [allergyNote, setAllergyNote] = useState('')
 
-   useEffect(() => {
-    if (typeof window === 'undefined') return;
+ // Accept either of the keys we’ve used so far
+const AGREED_KEYS = ['waiver_ok_session', 'waiver_accepted_v3'];
 
-     const hasAgreed = AGREED_KEYS.some(
-    k =>
-      sessionStorage.getItem(k) === '1' ||
-      localStorage.getItem(k) === '1'
-  );
-  
-    // Optional: also honor ?agreed=1 in the URL for manual override
-  const params = new URLSearchParams(window.location.search);
-  const viaQS = (params.get('agreed') || '').toLowerCase() === '1';
+useEffect(() => {
+  if (typeof window === 'undefined') return;
 
-  setAgreed(hasAgreed || viaQS);
+  const check = () => {
+    const has = AGREED_KEYS.some(
+      k =>
+        sessionStorage.getItem(k) === '1' ||
+        localStorage.getItem(k) === '1'
+    );
+    setAgreed(has);
+  };
+
+  // Initial check on mount
+  check();
+
+  // Update if the flag changes in this tab or another tab
+  const onStorage = (e) => {
+    if (!e) return;
+    if (AGREED_KEYS.includes(e.key) && e.newValue === '1') {
+      check();
+    }
+  };
+
+  window.addEventListener('storage', onStorage);
+  return () => window.removeEventListener('storage', onStorage);
 }, []);
 
-    const ls = localStorage.getItem(AGREED_KEY) === '1';
-    const params = new URLSearchParams(window.location.search);
-    const qsFlag = (params.get('agreed') || params.get('ok') || '').toLowerCase();
-    const viaQS = qsFlag === '1' || qsFlag === 'true';
 
-    setAgreed(ls || viaQS);
-
-    // keep in sync if user accepts in another tab
-    const onStorage = (e) => {
-      if (e.key === AGREED_KEY) setAgreed(e.newValue === '1');
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
 
   async function loadAll(){
     try{ 
