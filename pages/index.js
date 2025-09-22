@@ -37,9 +37,23 @@ export default function Home(){
   const [allergyName, setAllergyName] = useState('')
   const [allergyNote, setAllergyNote] = useState('')
 
-  useEffect(()=>{ 
-    setAgreed(typeof window!=='undefined' && localStorage.getItem(AGREED_KEY)==='1') 
-  }, [])
+   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const ls = localStorage.getItem(AGREED_KEY) === '1';
+    const params = new URLSearchParams(window.location.search);
+    const qsFlag = (params.get('agreed') || params.get('ok') || '').toLowerCase();
+    const viaQS = qsFlag === '1' || qsFlag === 'true';
+
+    setAgreed(ls || viaQS);
+
+    // keep in sync if user accepts in another tab
+    const onStorage = (e) => {
+      if (e.key === AGREED_KEY) setAgreed(e.newValue === '1');
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   async function loadAll(){
     try{ 
