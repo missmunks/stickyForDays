@@ -1,95 +1,48 @@
-// ---- shared helpers (paste into each function file) ----
+// netlify/functions/waivers.js
+const { createClient } = require('@supabase/supabase-js');
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
 };
 
 function getAdminToken(event) {
-  if (!isAdmin(event)) {
-  return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: 'Unauthorized' }) };
-}
-
   const h = event.headers || {};
-  // Authorization: Bearer <token>
   const auth = h.authorization || h.Authorization || '';
   const bearer = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  // x-admin-token: <token>
   const xhdr = h['x-admin-token'] || h['X-Admin-Token'] || '';
-  // ?token=<token> as a last resort
   const qs = event.queryStringParameters?.token || '';
   return bearer || xhdr || qs || '';
 }
 function isAdmin(event) {
-  const t = getAdminToken(event);
-  return t && t === (process.env.ADMIN_TOKEN || '');
+  return getAdminToken(event) === (process.env.ADMIN_TOKEN || '');
 }
 
-
-
-// netlify/functions/waiver-log.js
-const { createClient } = require('@supabase/supabase-js');
-
-const cors = () => ({
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-});
-
 exports.handler = async (event) => {
-  // Preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: cors(), body: 'ok' };
-  }
-  // Method guard
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: cors(), body: 'Method Not Allowed' };
-  }
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: 'ok' };
+  if (event.httpMethod !== 'GET') return { statusCode: 405, headers: CORS, body: 'Method Not Allowed' };
+  if (!isAdmin(event)) return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: 'Unauthorized' }) };
 
-  // Env guard
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE;
-  if (!url || !key) {
-    return {
-      statusCode: 500,
-      headers: cors(),
-      body: JSON.stringify({ error: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE' })
-    };
+  if (!url || !key) return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: 'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE' }) };
+
+  const s = createClient(url, key);
+  const { data, error } = await s
+    .from('waivers')
+    .select('id,name,email,contact,method,waiver_version,ip_address,user_agent,agreed_at')
+    .order('agreed_at', { ascending: false });
+
+  if (error) return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: error.message }) };
+
+  const wantsCsv = (event.queryStringParameters?.format || '').toLowerCase() === 'csv';
+  if (wantsCsv) {
+    const header = ['id','name','email','contact','method','waiver_version','ip_address','user_agent','agreed_at'];
+    const lines = [header.join(',')];
+    for (const r of data) lines.push(header.map(k => (r[k] ?? '')).join(','));
+    return { statusCode: 200, headers: { ...CORS, 'Content-Type': 'text/csv' }, body: lines.join('\n') };
   }
 
-  // Parse body
-  let body = {};
-  try { body = JSON.parse(event.body || '{}'); } catch {}
-
-  // ✅ REQUIRE NAME
-  const rawName = (body.name || '').toString().trim();
-  if (!rawName) {
-    return {
-      statusCode: 400,
-      headers: cors(),
-      body: JSON.stringify({ error: 'Name is required to accept the waiver.' })
-    };
-  }
-  const name = rawName.slice(0, 120);
-
-  // Meta: IP + User Agent (use Netlify header if available)
-  const ip = event.headers['x-nf-client-connection-ip']
-          || event.headers['x-forwarded-for']
-          || event.headers['client-ip']
-          || '';
-  const ua = event.headers['user-agent'] || '';
-
-  try {
-    const supabase = createClient(url, key);
-    // Minimal insert to match your existing table columns
-    const { error } = await supabase
-      .from('waivers')
-      .insert([{ name, ip_address: ip, user_agent: ua }]);
-
-    if (error) throw error;
-
-    return { statusCode: 200, headers: cors(), body: JSON.stringify({ ok: true }) };
-  } catch (e) {
-    return { statusCode: 500, headers: cors(), body: JSON.stringify({ error: e.message }) };
-  }
+  return { statusCode: 200, headers: CORS, body: JSON.stringify({ rows: data }) };
 };
