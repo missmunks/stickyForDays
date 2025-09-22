@@ -46,3 +46,27 @@ exports.handler = async (event) => {
 
   return { statusCode: 200, headers: CORS, body: JSON.stringify({ rows: data }) };
 };
+const body = JSON.parse(event.body || '{}');
+const name = (body.name || '').trim();
+if (!name) {
+  return { statusCode: 400, headers: cors(), body: JSON.stringify({ error: 'Name is required' }) };
+}
+
+const covered = Array.isArray(body.covered_names)
+  ? body.covered_names
+  : (body.covered || '')
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+const { error } = await supabase
+  .from('waivers')
+  .insert([{
+    name,
+    contact: body.email || null,
+    method: body.method || 'checkbox',
+    waiver_version: 'v9',
+    ip_address: ip,
+    user_agent: ua,
+    covered_names: covered.length ? covered : null
+  }]);

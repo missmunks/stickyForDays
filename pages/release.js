@@ -43,8 +43,42 @@ export default function Release(){
               placeholder="Please enter your name to accept the waver"
               className="border p-2 rounded w-full mt-1"
               required
-            />
+              />
           </label>
+
+          <form onSubmit={handleWaiverSubmit} className="space-y-4">
+  <input
+    type="text"
+    value={name}
+    onChange={e => setName(e.target.value)}
+    placeholder="Your full name (required)"
+    required
+    className="border p-2 rounded w-full"
+  />
+
+  <textarea
+    value={covered}
+    onChange={e => setCovered(e.target.value)}
+    placeholder="Names of additional guests (one per line)"
+    className="border p-2 rounded w-full"
+    rows={3}
+  />
+
+  <label className="flex items-center gap-2">
+    <input
+      type="checkbox"
+      checked={agree}
+      onChange={e => setAgree(e.target.checked)}
+      required
+    />
+    <span>I have read and accept the Release of Liability</span>
+  </label>
+
+  <button className="bg-green-600 text-white px-4 py-2 rounded">
+    Sign Waiver
+  </button>
+</form>
+
 
           <label className="flex items-center gap-3 mt-2">
             <input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)} />

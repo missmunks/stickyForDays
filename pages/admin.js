@@ -237,44 +237,57 @@ async function deleteRSVP(id) {
           <p className="mt-4 font-semibold">Total people expected: {total}</p>
         </section>
 
-        {/* Waiver Logs */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-2xl font-bold">Waiver Logs</h2>
-            <div className="flex gap-2">
-              <button onClick={() => loadWaivers()} className="bg-blue-600 text-white px-4 py-2 rounded">Refresh</button>
-              <button onClick={downloadWaiverCsv} className="bg-emerald-600 text-white px-4 py-2 rounded">Download CSV</button>
-            </div>
-          </div>
-          {waiverError && <p className="text-red-600 mb-3">{waiverError}</p>}
-          <table className="w-full text-sm border">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="p-2 border">When</th>
-                <th className="p-2 border">Name</th>
-                <th className="p-2 border">Email</th>
-                <th className="p-2 border">Method</th>
-                <th className="p-2 border">Version</th>
-                <th className="p-2 border">IP</th>
-                <th className="p-2 border">User Agent</th>
-              </tr>
-            </thead>
-            <tbody>
-              {waivers.map(w => (
-                <tr key={w.id}>
-                  <td className="p-2 border">{new Date(w.agreed_at).toLocaleString()}</td>
-                  <td className="p-2 border">{w.name}</td>
-                  <td className="p-2 border">{w.email || w.contact || ''}</td>
-                  <td className="p-2 border">{w.method || 'checkbox'}</td>
-                  <td className="p-2 border">{w.waiver_version || 'v8'}</td>
-                  <td className="p-2 border">{w.ip_address || ''}</td>
-                  <td className="p-2 border" style={{maxWidth: 280, overflowWrap: 'anywhere'}}>{w.user_agent || ''}</td>
-                </tr>
-              ))}
-              {waivers.length === 0 && <tr><td colSpan="7" className="p-2 text-center text-gray-600 italic">No waiver logs yet.</td></tr>}
-            </tbody>
-          </table>
-        </section>
+       {/* Waiver Logs */}
+<section>
+  <div className="flex items-center justify-between mb-3">
+    <h2 className="text-2xl font-bold">Waiver Logs</h2>
+    <div className="flex gap-2">
+      <button onClick={() => loadWaivers()} className="bg-blue-600 text-white px-4 py-2 rounded">Refresh</button>
+      <button onClick={downloadWaiverCsv} className="bg-emerald-600 text-white px-4 py-2 rounded">Download CSV</button>
+    </div>
+  </div>
+  {waiverError && <p className="text-red-600 mb-3">{waiverError}</p>}
+  <table className="w-full text-sm border">
+    <thead>
+      <tr className="bg-gray-100">
+        <th className="p-2 border">When</th>
+        <th className="p-2 border">Name</th>
+        <th className="p-2 border">Covered Names</th>
+        <th className="p-2 border">Email</th>
+        <th className="p-2 border">Method</th>
+        <th className="p-2 border">Version</th>
+        <th className="p-2 border">IP</th>
+        <th className="p-2 border">User Agent</th>
+      </tr>
+    </thead>
+    <tbody>
+      {waivers.map(w => (
+        <tr key={w.id}>
+          <td className="p-2 border">{new Date(w.agreed_at).toLocaleString()}</td>
+          <td className="p-2 border">{w.name}</td>
+          <td className="p-2 border">{(w.covered_names || []).join(', ')}</td>
+          <td className="p-2 border">{w.email || w.contact || ''}</td>
+          <td className="p-2 border">{w.method || 'checkbox'}</td>
+          <td className="p-2 border">{w.waiver_version || 'v8'}</td>
+          <td className="p-2 border">{w.ip_address || ''}</td>
+          <td
+            className="p-2 border"
+            style={{ maxWidth: 280, overflowWrap: 'anywhere' }}
+          >
+            {w.user_agent || ''}
+          </td>
+        </tr>
+      ))}
+      {waivers.length === 0 && (
+        <tr>
+          <td colSpan="8" className="p-2 text-center text-gray-600 italic">
+            No waiver logs yet.
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</section>
 
         {/* Allergies */}
         <section className="section-card p-4 border rounded">
