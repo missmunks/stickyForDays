@@ -95,7 +95,7 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
   }
 };
-// pages/release.js (in your submit handler, after a successful POST)
-localStorage.setItem('waiver_accepted_v3', '1');
-// navigate back to home — a full reload is simplest
-window.location.href = '/?agreed=1';
+// // pages/release.js (in your submit handler, after a successful POST)
+// localStorage.setItem('waiver_accepted_v3', '1');
+// // navigate back to home — a full reload is simplest
+// window.location.href = '/?agreed=1';

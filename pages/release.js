@@ -46,28 +46,31 @@ export default function Release() {
         body: JSON.stringify({
           name: trimmedName,
           email: email.trim() || null,
-          covered_names: covered,        // array of strings
-          method: 'checkbox',            // simple provenance tag
+          covered_names: covered,  // array of strings
+          method: 'checkbox',
         }),
       })
 
       if (!res.ok) {
-        const t = await res.text().catch(() => '')
-        throw new Error(t || 'Failed to save waiver')
+        let msg = 'Failed to save waiver'
+        try {
+          const txt = await res.text()
+          if (txt) msg = txt
+        } catch {}
+        throw new Error(msg)
       }
 
-      // Mark this browser session as agreed so RSVP unlocks
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem(AGREED_SESSION_KEY, '1')
-      }
+      // unlock RSVP for this browser session
+      sessionStorage.setItem(AGREED_SESSION_KEY, '1')
 
-      // Optional: clear form (not strictly needed if you redirect)
-      setName(''); setEmail(''); setCoveredNames(''); setAgree(false)
+      // Optional UI cleanup before redirect
+      setName('')
+      setEmail('')
+      setCoveredNames('')
+      setAgree(false)
 
-      // Send back to the homepage where RSVP lives
-      if (typeof window !== 'undefined') {
-        window.location.href = '/'
-      }
+      // Go back to home where RSVP lives
+      window.location.href = '/'
     } catch (err) {
       setError(err.message || 'Failed to save waiver')
     } finally {
