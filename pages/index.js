@@ -20,6 +20,7 @@ const itemsSeed = [
   "Cereal bars","Granola bars","Puffed rice cakes"
 ];
 const AGREED_KEY = 'waiver_accepted_v3'
+const AGREED_KEYS = ['waiver_ok_session', 'waiver_accepted_v3'];
 
 export default function Home(){
   const [name, setName] = useState('')
@@ -39,6 +40,19 @@ export default function Home(){
 
    useEffect(() => {
     if (typeof window === 'undefined') return;
+
+     const hasAgreed = AGREED_KEYS.some(
+    k =>
+      sessionStorage.getItem(k) === '1' ||
+      localStorage.getItem(k) === '1'
+  );
+  
+    // Optional: also honor ?agreed=1 in the URL for manual override
+  const params = new URLSearchParams(window.location.search);
+  const viaQS = (params.get('agreed') || '').toLowerCase() === '1';
+
+  setAgreed(hasAgreed || viaQS);
+}, []);
 
     const ls = localStorage.getItem(AGREED_KEY) === '1';
     const params = new URLSearchParams(window.location.search);
