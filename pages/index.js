@@ -206,7 +206,8 @@ export default function Home(){
 
         {/* Suggestions */}
         <section className="section-card backdrop-blur p-6 rounded-2xl shadow-xl border-4 border-yellow-300">
-          <h2 className="text-2xl font-bold mb-3">Suggestions to Bring</h2>
+          <h2 style="text-align: center;" className="text-2xl font-bold mb-3">Suggestions to Bring</h2>
+          <p style="text-align: center;">Cross off what you're bringing!</p>
           <form onSubmit={addItem} className="flex gap-2 mb-4">
             <input value={newItem} onChange={e=>setNewItem(e.target.value)} placeholder="Add your own" className="border p-2 rounded flex-1" />
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Add</button>
@@ -222,7 +223,7 @@ export default function Home(){
         {/* Allergies */}
         <section className="section-card backdrop-blur p-6 rounded-2xl shadow-xl border-4 border-red-300">
           <h2 className="text-2xl font-bold mb-3">I have an allergy! <span aria-hidden>🛟</span></h2>
-          <p className="text-sm text-gray-700 mb-3">Share helpful info so the snack bar stays friendly. (Examples: “Peanuts”, “Dairy”, "Bullshit", "Gluten", "Food dye #40", "Fun".)</p>
+          <p className="text-sm text-gray-700 mb-3">Share helpful info (Examples: “Peanuts”, “Dairy”, "Bullshit", "Gluten", "Food dye #40", "Fun".)<br/><br/>We'll do our best to keep allergens separated, but keep in mind that cross contamination is likely. If you or your little chaos goblin have a life threatning allergy, plese call me so we can work together to keep your kiddo (or you) safe.  </p>
           <form onSubmit={addAllergy} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
             <input value={allergyName} onChange={e=>setAllergyName(e.target.value)} placeholder="Your name (optional)" className="border p-2 rounded" />
             <input value={allergyNote} onChange={e=>setAllergyNote(e.target.value)} placeholder="Allergy / note (required)" className="border p-2 rounded md:col-span-1" />
