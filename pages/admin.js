@@ -55,13 +55,11 @@ export default function Admin() {
     if (!confirm('Delete this RSVP?')) return;
     setRsvpBusy(true);
     try {
-      const res = await fetch('/.netlify/functions/rsvp', {
+      const res = await fetch(`/.netlify/functions/rsvp?id=${id}`, {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ id }),
       });
       if (!res.ok) throw new Error('delete failed');
       await loadRSVPs();
