@@ -95,25 +95,43 @@ exports.handler = async (event) => {
     }
   }
 
-  // DELETE: admin only
+// DELETE: admin only
 if (event.httpMethod === 'DELETE') {
   if (!isAdmin(event)) {
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
   try {
-    const qsId = event.queryStringParameters?.id;
-    let bodyId;
-    try { bodyId = JSON.parse(event.body || '{}').id; } catch {}
-    const id = Number(qsId ?? bodyId);
-    if (!id) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'id required' }) };
+    // accept id from query, body, or even alternate keys to be safe
+    const qs = event.queryStringParameters || {};
+    let body = {};
+    try { body = JSON.parse(event.body || '{}'); } catch {}
+
+    const candidates = [
+      qs.id, qs.rsvp_id, qs.r,              // query
+      body.id, body.rsvp_id, body.r         // body
+    ];
+    const id = Number(first);
+
+    if (!Number.isFinite(id) || id <= 0) {
+      return {
+        statusCode: 400,
+        headers: CORS,
+        body: JSON.stringify({
+          error: 'id required',
+          received: { query: qs, body },     // <- shows what we got
+        })
+      };
+    }
 
     const { error } = await s.from('rsvps').delete().eq('id', id);
     if (error) throw error;
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true }) };
+
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true, id }) };
   } catch (e) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
   }
 }
+
 
 
   return { statusCode: 405, headers: CORS, body: 'Method Not Allowed' };

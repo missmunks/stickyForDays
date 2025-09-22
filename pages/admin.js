@@ -51,24 +51,32 @@ export default function Admin() {
     }
   }
 
-  async function deleteRSVP(id) {
-    if (!confirm('Delete this RSVP?')) return;
-    setRsvpBusy(true);
-    try {
-      const res = await fetch(`/.netlify/functions/rsvp?id=${id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) throw new Error('delete failed');
-      await loadRSVPs();
-    } catch {
-      setRsvpError('Delete failed (check token).');
-    } finally {
-      setRsvpBusy(false);
-    }
+async function deleteRSVP(id) {
+  if (!confirm('Delete this RSVP?')) return;
+  const numericId = Number(id);                 // ensure number
+  if (!Number.isFinite(numericId)) {
+    alert('Bad id: ' + String(id));
+    return;
   }
+  setRsvpBusy(true);
+  try {
+    const res = await fetch(`/.netlify/functions/rsvp?id=${numericId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const text = await res.text();              // read body either way
+    if (!res.ok) {
+      // show what the server actually returned (helps us debug)
+      throw new Error(`HTTP ${res.status}: ${text || 'delete failed'}`);
+    }
+    await loadRSVPs();
+  } catch (e) {
+    setRsvpError('Delete failed: ' + e.message);
+  } finally {
+    setRsvpBusy(false);
+  }
+}
+
 
   const total = useMemo(() => rsvps.reduce((a, r) => a + (r.count || 1), 0), [rsvps]);
 
