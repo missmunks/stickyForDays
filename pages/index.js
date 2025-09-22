@@ -207,6 +207,7 @@ export default function Home(){
         {/* Suggestions */}
         <section className="section-card backdrop-blur p-6 rounded-2xl shadow-xl border-4 border-yellow-300">
           <h2 className="text-2xl font-bold mb-3">Suggestions to Bring</h2>
+          <p>Cross of what you're bringing!</p>
           <form onSubmit={addItem} className="flex gap-2 mb-4">
             <input value={newItem} onChange={e=>setNewItem(e.target.value)} placeholder="Add your own" className="border p-2 rounded flex-1" />
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Add</button>
